@@ -270,7 +270,7 @@ async def reset_data(message: Message):
     # Сбрасываем настройки
     cursor.execute("""
         UPDATE settings 
-        SET deposit = 0, trader_rate = 10, payout = 0, exchange_rate = 0
+        SET deposit = 0, trader_rate = 10, payout = 0, exchange_rate = 1
         WHERE id = 1
     """)
 
