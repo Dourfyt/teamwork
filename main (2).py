@@ -16,7 +16,7 @@ def get_db_path(chat_id):
     db_name = f"data_group_{chat_id}.db"
     return os.path.join("databases", db_name)
 
-TOKEN = "7686976913:AAHXhe8H_Zm3_73DPbj7W56L-i-3hWHtd9c"
+TOKEN = "7914429035:AAFXYjhHpfdIaAzw1o4Qv578jfZOFG_1s6Y"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
