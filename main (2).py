@@ -136,49 +136,52 @@ async def set_trader_rate(message: Message):
 
 
 @router.message(Command("выплата"))
-async def set_payout(message: Message):
+async def payout_command(message: Message):
+    chat_id = message.chat.id
+    initialize_db(chat_id)
+    db_path = get_db_path(chat_id)
+
     try:
-        chat_id = message.chat.id
-        db_path = get_db_path(chat_id)
-
-        # Гарантируем, что БД и таблицы существуют
-        initialize_db(chat_id)
         amount = float(message.text.split()[1])
-
-        conn = sqlite3.connect(f"{db_path}")
-        cursor = conn.cursor()
-
-        # Получаем текущий остаток к выплате
-        cursor.execute("SELECT SUM(amount) FROM receipts WHERE timestamp LIKE ?", (f"{datetime.now().strftime('%Y-%m-%d')}%",))
-        turnover = cursor.fetchone()[0] or 0
-
-        cursor.execute("SELECT trader_rate, payout FROM settings WHERE id = 1")
-        result = cursor.fetchone()
-        if result is None:
-            await message.answer("Ошибка: настройки не найдены.")
-            conn.close()
-            return
-
-        trader_rate, current_payout = result
-
-        # Учитываем комиссию трейдера
-        turnover_after_fee = turnover - (turnover * trader_rate / 100)
-        payout_left = max(turnover_after_fee - current_payout, 0)
-
-        if amount > payout_left:
-            await message.answer(f"Ошибка: сумма выплаты {amount:.2f} превышает доступную {payout_left:.2f}.")
-            conn.close()
-            return
-
-        # Обновляем сумму выплаченного
-        cursor.execute("UPDATE settings SET payout = payout + ? WHERE id = 1", (amount,))
-        conn.commit()
-        conn.close()
-
-        await message.answer(f"Выплата {amount:.2f} проведена. Осталось к выплате: {payout_left - amount:.2f}")
-
     except (IndexError, ValueError):
-        await message.answer("Некорректный формат. Используйте: /выплата 500")
+        await message.answer("Ошибка: укажите сумму выплаты. Пример: /выплата 100")
+        return
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Получаем настройки
+    cursor.execute("SELECT payout FROM settings WHERE id = 1")
+    current_payout = cursor.fetchone()[0] or 0
+
+    # Получаем оборот за сегодня
+    cursor.execute("SELECT SUM(amount) FROM receipts WHERE DATE(timestamp) = DATE('now', 'localtime')")
+    turnover = cursor.fetchone()[0] or 0
+
+    # Получаем ставку трейдера
+    cursor.execute("SELECT trader_rate FROM settings WHERE id = 1")
+    trader_rate = cursor.fetchone()[0] or 10
+
+    # Учитываем комиссию
+    trader_fee = turnover * (trader_rate / 100)
+    turnover_after_fee = turnover - trader_fee
+
+    # Осталось к выплате
+    payout_left = round(max(turnover_after_fee - current_payout, 0), 2)
+
+    if round(amount, 2) > payout_left:  # ✅ Теперь сравнение корректное
+        await message.answer(f"Ошибка: сумма выплаты {amount:.2f} превышает доступную {payout_left:.2f}.")
+        conn.close()
+        return
+
+    # Обновляем сумму выплаченного
+    new_payout = round(current_payout + amount, 2)
+    cursor.execute("UPDATE settings SET payout = ? WHERE id = 1", (new_payout,))
+    conn.commit()
+    conn.close()
+
+    await message.answer(f"✅ Выплачено {amount:.2f}. Остаток к выплате: {round(payout_left - amount, 2):.2f}.")
+
 
 
 @router.message(Command("курс"))
