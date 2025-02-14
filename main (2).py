@@ -84,7 +84,7 @@ async def add_receipt_command(message: Message):
         amount = float(parts[1])
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Исправлено!
 
-        conn = sqlite3.connect("data.db")
+        conn = sqlite3.connect(f"{db_path}")
         cursor = conn.cursor()
         cursor.execute("INSERT INTO receipts (amount, timestamp) VALUES (?, ?)", (amount, timestamp))
         conn.commit()
@@ -106,7 +106,7 @@ async def set_deposit(message: Message):
         # Гарантируем, что БД и таблицы существуют
         initialize_db(chat_id)
         amount = float(message.text.split()[1])
-        conn = sqlite3.connect("data.db")
+        conn = sqlite3.connect(f"{db_path}")
         cursor = conn.cursor()
         cursor.execute("UPDATE settings SET deposit = ? WHERE id = 1", (amount,))
         conn.commit()
@@ -125,7 +125,7 @@ async def set_trader_rate(message: Message):
         # Гарантируем, что БД и таблицы существуют
         initialize_db(chat_id)
         rate = float(message.text.split()[1])
-        conn = sqlite3.connect("data.db")
+        conn = sqlite3.connect(f"{db_path}")
         cursor = conn.cursor()
         cursor.execute("UPDATE settings SET trader_rate = ? WHERE id = 1", (rate,))
         conn.commit()
@@ -145,7 +145,7 @@ async def set_payout(message: Message):
         initialize_db(chat_id)
         amount = float(message.text.split()[1])
 
-        conn = sqlite3.connect("data.db")
+        conn = sqlite3.connect(f"{db_path}")
         cursor = conn.cursor()
 
         # Получаем текущий остаток к выплате
@@ -190,7 +190,7 @@ async def set_exchange_rate(message: Message):
         # Гарантируем, что БД и таблицы существуют
         initialize_db(chat_id)
         rate = float(message.text.split()[1])
-        conn = sqlite3.connect("data.db")
+        conn = sqlite3.connect(f"{db_path}")
         cursor = conn.cursor()
         cursor.execute("UPDATE settings SET exchange_rate = ? WHERE id = 1", (rate,))
         conn.commit()
